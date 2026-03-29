@@ -1,0 +1,25 @@
+__pycache__/
+.env
+moodmate.db
+*.pyc
+.vscode/
+.idea/
+.env
+moodmate.db
+moodmate.db
+.DS_Store
+.venv/
+
+USE_OPENAI_WHISPER=true
+OPENAI_API_KEY=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
+WHISPER_MODEL=large-v3
+EMOTION_API_URL=http://localhost:5000/predict
+EMOTION_API_TIMEOUT=60
+
+.venv/
+venv2/
+venv311/
+# Ignore large model weights
+app/models/bert_emotion_model/model.safetensors
+*.safetensors
+android/app/build/
