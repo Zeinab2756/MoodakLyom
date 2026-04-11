@@ -1,72 +1,74 @@
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
 from app.database import get_db
-from app.models.user import User
-from app.models.mood import Mood      # ✅ import these models
+from app.dependencies import get_current_user
+from app.models.mood import Mood
 from app.models.task import Task
-from app.dependencies import get_current_user  # ✅ JWT auth dependency
+from app.models.user import User
 
-router = APIRouter(prefix="/profile", tags=["Profile"])
+router = APIRouter()
 
-# ✅ GET /profile/get
+
+class ProfileUpdateRequest(BaseModel):
+    avatar: str | None = None
+    preferences: dict[str, Any] | None = None
+    theme: str | None = None
+    notification_style: str | None = None
+    reminder_frequency: str | None = None
+    privacy_toggle: str | None = None
+
+
 @router.get("/get")
 def get_profile(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    """Return the user's profile settings."""
     user = db.query(User).filter(User.id == current_user.id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    preferences = user.preferences or {}
     return {
         "username": user.username,
         "avatar": user.avatar,
-        "preferences": user.preferences,
+        "preferences": preferences,
         "profile": {
-            "theme": user.preferences.get("theme", "light"),
-            "notification_style": user.preferences.get("notification_style", "default"),
-            "reminder_frequency": user.preferences.get("reminder_frequency", "daily"),
-            "privacy_toggle": user.preferences.get("privacy_toggle", "public"),
-        }
+            "theme": preferences.get("theme", "light"),
+            "notification_style": preferences.get("notification_style", "default"),
+            "reminder_frequency": preferences.get("reminder_frequency", "daily"),
+            "privacy_toggle": preferences.get("privacy_toggle", "public"),
+        },
     }
 
-# ✅ PUT /profile/update
+
 @router.put("/update")
 def update_profile(
+    payload: ProfileUpdateRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    avatar: str = None,
-    preferences: dict = None,
-    theme: str = None,
-    notification_style: str = None,
-    reminder_frequency: str = None,
-    privacy_toggle: str = None
 ):
-    """
-    Update profile settings.
-    Allows editing avatar and preferences in addition to other options.
-    """
     user = db.query(User).filter(User.id == current_user.id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Update avatar if provided
-    if avatar:
-        user.avatar = avatar
+    if payload.avatar is not None:
+        user.avatar = payload.avatar
 
-    # Update preferences dictionary
     updated_preferences = user.preferences or {}
-    if preferences:
-        updated_preferences.update(preferences)
-    if theme:
-        updated_preferences["theme"] = theme
-    if notification_style:
-        updated_preferences["notification_style"] = notification_style
-    if reminder_frequency:
-        updated_preferences["reminder_frequency"] = reminder_frequency
-    if privacy_toggle:
-        updated_preferences["privacy_toggle"] = privacy_toggle
+    if payload.preferences:
+        updated_preferences.update(payload.preferences)
+    if payload.theme is not None:
+        updated_preferences["theme"] = payload.theme
+    if payload.notification_style is not None:
+        updated_preferences["notification_style"] = payload.notification_style
+    if payload.reminder_frequency is not None:
+        updated_preferences["reminder_frequency"] = payload.reminder_frequency
+    if payload.privacy_toggle is not None:
+        updated_preferences["privacy_toggle"] = payload.privacy_toggle
 
     user.preferences = updated_preferences
     db.commit()
@@ -77,48 +79,52 @@ def update_profile(
         "message": "Profile updated successfully",
         "data": {
             "avatar": user.avatar,
-            "preferences": user.preferences
-        }
+            "preferences": user.preferences,
+        },
     }
 
-# ✅ GET /profile/export (Improved)
+
 @router.get("/export")
 def export_profile(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    """Export all user-related data (user info, profile, moods, and tasks)."""
     user = db.query(User).filter(User.id == current_user.id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     moods = db.query(Mood).filter(Mood.user_id == user.id).all()
     tasks = db.query(Task).filter(Task.user_id == user.id).all()
-
     return {
         "user": {
             "id": user.id,
             "username": user.username,
             "avatar": user.avatar,
-            "created_at": user.created_at,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
         },
-        "profile": user.preferences,
+        "profile": user.preferences or {},
         "moods": [
             {
-                "date": m.date,
-                "mood_level": m.mood_level,
-                "tags": m.tags,
-                "notes": m.notes
+                "date": mood.date.isoformat(),
+                "mood_level": mood.mood_level,
+                "emoji": mood.emoji,
+                "emotion": mood.emotion,
+                "tags": mood.tags,
+                "notes": mood.notes,
             }
-            for m in moods
+            for mood in moods
         ],
         "tasks": [
             {
-                "title": t.title,
-                "status": t.status,
-                "deadline": t.deadline,
-                "priority": t.priority
+                "id": task.id,
+                "title": task.title,
+                "description": task.description,
+                "is_completed": task.is_completed,
+                "deadline": task.deadline.isoformat() if task.deadline else None,
+                "priority": task.priority.value,
+                "created_at": task.created_at.isoformat() if task.created_at else None,
+                "updated_at": task.updated_at.isoformat() if task.updated_at else None,
             }
-            for t in tasks
-        ]
+            for task in tasks
+        ],
     }

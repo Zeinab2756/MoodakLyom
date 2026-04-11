@@ -1,29 +1,22 @@
-# app/main.py
-import os
-import time
 import sys
+import time
 import traceback
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-# Database imports
-from .database import Base, engine
-from app.models import user, mood, task  # SQLAlchemy models
+from app.database import Base, SessionLocal, engine
+from app.models import hack, mood, task, user  # noqa: F401 - imported for metadata
+from app.services.wellness_tips import ensure_default_hacks
 
-# -----------------------------
-# Initialize FastAPI app
-# -----------------------------
 app = FastAPI(
     title="Moodaak API",
-    description="Backend for MoodakLyom App - Phase 1",
-    version="1.0.0"
+    description="Backend for MoodakLyom App",
+    version="1.1.0",
 )
 
-# -----------------------------
-# Middleware: Logging requests
-# -----------------------------
+
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start = time.time()
@@ -39,34 +32,39 @@ async def log_requests(request: Request, call_next):
         traceback.print_exception(type(exc), exc, exc.__traceback__, file=sys.stderr)
         return JSONResponse(
             status_code=500,
-            content={"success": False, "error": {"code": "SERVER_ERROR", "message": "Unexpected error"}}
+            content={"success": False, "error": {"code": "SERVER_ERROR", "message": "Unexpected error"}},
         )
 
-# -----------------------------
-# CORS Middleware
-# -----------------------------
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # change later for production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# -----------------------------
-# Initialize Database
-# -----------------------------
 Base.metadata.create_all(bind=engine)
+with SessionLocal() as db:
+    ensure_default_hacks(db)
 
-# -----------------------------
-# Include Routes
-# -----------------------------
+from app.routes import hack as hack_routes
+from app.routes import mood as mood_routes
+from app.routes import profile as profile_routes
+from app.routes import resource as resource_routes
+from app.routes import task as task_routes
 from app.routes import user as user_routes
-app.include_router(user_routes.router, prefix="/user", tags=["User"])
+from app.routes import voice as voice_routes
 
-# -----------------------------
-# Health Check
-# -----------------------------
+app.include_router(user_routes.router, prefix="/user", tags=["User"])
+app.include_router(mood_routes.router, prefix="/mood", tags=["Mood"])
+app.include_router(task_routes.router, prefix="/tasks", tags=["Tasks"])
+app.include_router(profile_routes.router, prefix="/profile", tags=["Profile"])
+app.include_router(hack_routes.router, prefix="/hacks", tags=["Hacks"])
+app.include_router(resource_routes.router, prefix="/resources", tags=["Resources"])
+app.include_router(voice_routes.router, prefix="/voice", tags=["Voice"])
+
+
 @app.get("/")
 def root():
-    return {"message": "Moodak lyom Backend Phase 1 is running successfully!"}
+    return {"message": "MoodakLyom backend is running successfully!", "status": "ok"}
