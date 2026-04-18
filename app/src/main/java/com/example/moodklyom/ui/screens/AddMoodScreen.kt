@@ -1,4 +1,4 @@
-package com.moodaklyom.ui.screens
+package com.example.moodklyom.ui.screens
 
 import android.Manifest
 import android.content.Context
@@ -23,15 +23,15 @@ import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import com.moodaklyom.data.api.RetrofitClient
-import com.moodaklyom.data.local.TokenManager
-import com.moodaklyom.data.model.MoodCreate
-import com.moodaklyom.data.model.TranscriptionResponse
+import com.example.moodklyom.data.api.RetrofitClient
+import com.example.moodklyom.data.local.TokenManager
+import com.example.moodklyom.data.model.MoodCreate
+import com.example.moodklyom.data.model.TranscriptionResponse
 import kotlinx.coroutines.flow.first
-import com.moodaklyom.ui.components.CustomTopAppBar
-import com.moodaklyom.ui.theme.MintPrimary
-import com.moodaklyom.ui.theme.MintLight
-import com.moodaklyom.ui.theme.White
+import com.example.moodklyom.ui.components.CustomTopAppBar
+import com.example.moodklyom.ui.theme.MintPrimary
+import com.example.moodklyom.ui.theme.MintLight
+import com.example.moodklyom.ui.theme.White
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody

@@ -1,4 +1,4 @@
-package com.moodaklyom.ui.theme
+package com.example.moodklyom.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme

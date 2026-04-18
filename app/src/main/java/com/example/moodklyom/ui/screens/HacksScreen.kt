@@ -1,4 +1,4 @@
-package com.moodaklyom.ui.screens
+package com.example.moodklyom.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,12 +22,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.moodaklyom.HacksViewModel
-import com.moodaklyom.data.local.TokenManager
-import com.moodaklyom.data.model.WellnessTip
-import com.moodaklyom.ui.components.BottomNavBar
-import com.moodaklyom.ui.components.CustomTopAppBar
-import com.moodaklyom.ui.theme.MintPrimary
+import com.example.moodklyom.HacksViewModel
+import com.example.moodklyom.data.local.TokenManager
+import com.example.moodklyom.data.model.WellnessTip
+import com.example.moodklyom.ui.components.BottomNavBar
+import com.example.moodklyom.ui.components.CustomTopAppBar
+import com.example.moodklyom.ui.theme.MintPrimary
 
 @Composable
 fun HacksScreen(navController: NavController) {

@@ -1,6 +1,6 @@
-package com.moodaklyom.data.api
+package com.example.moodklyom.data.api
 
-import com.moodaklyom.data.model.*
+import com.example.moodklyom.data.model.*
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.Response

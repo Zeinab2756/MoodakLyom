@@ -1,4 +1,4 @@
-package com.moodaklyom.ui.components
+package com.example.moodklyom.ui.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -9,8 +9,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.moodaklyom.ui.theme.MintPrimary
-import com.moodaklyom.ui.theme.White
+import com.example.moodklyom.ui.theme.MintPrimary
+import com.example.moodklyom.ui.theme.White
 
 @Composable
 fun CustomTopAppBar(

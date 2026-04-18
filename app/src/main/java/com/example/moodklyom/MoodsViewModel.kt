@@ -1,10 +1,10 @@
-package com.moodaklyom
+package com.example.moodklyom
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.moodaklyom.data.api.RetrofitClient
-import com.moodaklyom.data.local.TokenManager
-import com.moodaklyom.data.model.MoodResponse
+import com.example.moodklyom.data.api.RetrofitClient
+import com.example.moodklyom.data.local.TokenManager
+import com.example.moodklyom.data.model.MoodResponse
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

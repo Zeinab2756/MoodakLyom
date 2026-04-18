@@ -1,4 +1,4 @@
-package com.moodaklyom.ui.theme
+package com.example.moodklyom.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

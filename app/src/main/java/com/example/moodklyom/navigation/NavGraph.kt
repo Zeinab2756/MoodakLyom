@@ -1,11 +1,10 @@
-package com.moodaklyom.navigation
+package com.example.moodklyom.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.moodaklyom.ui.screens.*
-
+import com.example.moodklyom.ui.screens.*
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
@@ -18,7 +17,6 @@ sealed class Screen(val route: String) {
     object Profile : Screen("profile")
     object Settings : Screen("settings")
     object About : Screen("about")
-
     object EditProfile : Screen("edit_profile")
     object ChangePassword : Screen("change_password")
 }
@@ -57,7 +55,6 @@ fun NavGraph(
         composable(Screen.Profile.route) {
             ProfileScreen(navController = navController)
         }
-
         composable(Screen.Settings.route) {
             SettingsScreen(
                 navController = navController,
@@ -65,15 +62,12 @@ fun NavGraph(
                 onDarkThemeChange = onDarkThemeChange
             )
         }
-
         composable(Screen.About.route) {
             AboutScreen(navController = navController)
         }
-
         composable(Screen.EditProfile.route) {
             EditProfileScreen(navController = navController)
         }
-
         composable(Screen.ChangePassword.route) {
             ChangePasswordScreen(navController = navController)
         }

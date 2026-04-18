@@ -1,4 +1,4 @@
-package com.moodaklyom.ui.components
+package com.example.moodklyom.ui.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -7,7 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.moodaklyom.navigation.Screen
+import com.example.moodklyom.navigation.Screen
 
 data class BottomNavItem(
     val label: String,
@@ -48,11 +48,11 @@ fun BottomNavBar(navController: NavController) {
                     }
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.primary, // This is MintPrimary
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
                     selectedTextColor = MaterialTheme.colorScheme.primary,
-                    indicatorColor = MaterialTheme.colorScheme.primaryContainer, // This is light green
-                    unselectedIconColor = MaterialTheme.colorScheme.primary, // Force unselected to be same as selected
-                    unselectedTextColor = MaterialTheme.colorScheme.primary  // Force unselected to be same as selected
+                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                    unselectedIconColor = MaterialTheme.colorScheme.primary,
+                    unselectedTextColor = MaterialTheme.colorScheme.primary
                 )
             )
         }

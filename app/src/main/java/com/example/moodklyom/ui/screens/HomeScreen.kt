@@ -1,4 +1,4 @@
-package com.moodaklyom.ui.screens
+package com.example.moodklyom.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -14,12 +14,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.moodaklyom.navigation.Screen
-import com.moodaklyom.ui.components.BottomNavBar
-import com.moodaklyom.ui.components.CustomTopAppBar
-import com.moodaklyom.ui.theme.MintLight
-import com.moodaklyom.ui.theme.MintPrimary
-import com.moodaklyom.ui.theme.White
+import com.example.moodklyom.navigation.Screen
+import com.example.moodklyom.ui.components.BottomNavBar
+import com.example.moodklyom.ui.components.CustomTopAppBar
+import com.example.moodklyom.ui.theme.MintLight
+import com.example.moodklyom.ui.theme.MintPrimary
+import com.example.moodklyom.ui.theme.White
 
 @Composable
 fun HomeScreen(navController: NavController) {

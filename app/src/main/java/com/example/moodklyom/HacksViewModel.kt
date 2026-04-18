@@ -1,11 +1,11 @@
-package com.moodaklyom
+package com.example.moodklyom
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.moodaklyom.data.api.RetrofitClient
-import com.moodaklyom.data.local.TokenManager
-import com.moodaklyom.data.model.WellnessTip
-import com.moodaklyom.data.model.TaskCreate
+import com.example.moodklyom.data.api.RetrofitClient
+import com.example.moodklyom.data.local.TokenManager
+import com.example.moodklyom.data.model.WellnessTip
+import com.example.moodklyom.data.model.TaskCreate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,7 +37,6 @@ class HacksViewModel(private val tokenManager: TokenManager) : ViewModel() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                // Ensure requests use the persisted auth token (if available)
                 val token = tokenManager.token.first()
                 RetrofitClient.setAuthToken(token)
 

@@ -1,4 +1,4 @@
-package com.moodaklyom.data.local
+package com.example.moodklyom.data.local
 
 import android.content.Context
 import androidx.datastore.core.DataStore

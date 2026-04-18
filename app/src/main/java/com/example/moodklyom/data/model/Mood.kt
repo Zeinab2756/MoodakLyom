@@ -1,4 +1,4 @@
-package com.moodaklyom.data.model
+package com.example.moodklyom.data.model
 
 data class MoodCreate(
     val date: String, // YYYY-MM-DD

@@ -1,4 +1,4 @@
-package com.moodaklyom.data.model
+package com.example.moodklyom.data.model
 
 data class LoginRequest(
     val username: String,

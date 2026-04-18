@@ -1,4 +1,4 @@
-package com.moodaklyom
+package com.example.moodklyom
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -11,13 +11,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.rememberNavController
-import com.moodaklyom.data.api.RetrofitClient
-import com.moodaklyom.navigation.NavGraph
-import com.moodaklyom.ui.theme.MoodakLyomTheme
+import com.example.moodklyom.data.api.RetrofitClient
+import com.example.moodklyom.navigation.NavGraph
+import com.example.moodklyom.ui.theme.MoodakLyomTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        // ⭐ Install Splash Screen before super.onCreate()
+        installSplashScreen()
+
         super.onCreate(savedInstanceState)
 
         setContent {

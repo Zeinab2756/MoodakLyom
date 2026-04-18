@@ -1,4 +1,4 @@
-package com.moodaklyom.ui.screens
+package com.example.moodklyom.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,12 +18,12 @@ import androidx.navigation.NavController
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.moodaklyom.MoodsViewModel
-import com.moodaklyom.data.local.TokenManager
-import com.moodaklyom.navigation.Screen
-import com.moodaklyom.ui.components.BottomNavBar
-import com.moodaklyom.ui.components.CustomTopAppBar
-import com.moodaklyom.ui.theme.PurplePrimary
+import com.example.moodklyom.MoodsViewModel
+import com.example.moodklyom.data.local.TokenManager
+import com.example.moodklyom.navigation.Screen
+import com.example.moodklyom.ui.components.BottomNavBar
+import com.example.moodklyom.ui.components.CustomTopAppBar
+import com.example.moodklyom.ui.theme.PurplePrimary
 
 @Composable
 fun MoodsScreen(navController: NavController) {

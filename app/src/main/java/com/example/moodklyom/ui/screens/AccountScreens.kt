@@ -1,4 +1,4 @@
-package com.moodaklyom.ui.screens
+package com.example.moodklyom.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
@@ -8,9 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.moodaklyom.ui.components.CustomTopAppBar
-
-
+import com.example.moodklyom.ui.components.CustomTopAppBar
 
 @Composable
 fun ChangePasswordScreen(navController: NavController) {

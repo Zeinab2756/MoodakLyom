@@ -1,9 +1,10 @@
-package com.moodaklyom
+package com.example.moodklyom
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.moodaklyom.data.api.RetrofitClient
-import com.moodaklyom.data.local.TokenManager
+import com.example.moodklyom.data.api.RetrofitClient
+import com.example.moodklyom.data.local.TokenManager
+import com.example.moodklyom.data.model.LoginRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,7 +28,7 @@ class LoginViewModel(private val tokenManager: TokenManager) : ViewModel() {
 
             try {
                 val response = RetrofitClient.apiService.loginOrSignup(
-                    com.moodaklyom.data.model.LoginRequest(
+                    LoginRequest(
                         username = username,
                         password = password
                     )

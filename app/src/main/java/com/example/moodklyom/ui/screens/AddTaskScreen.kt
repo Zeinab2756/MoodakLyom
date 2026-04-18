@@ -1,4 +1,4 @@
-package com.moodaklyom.ui.screens
+package com.example.moodklyom.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,12 +9,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.moodaklyom.data.api.RetrofitClient
-import com.moodaklyom.data.local.TokenManager
-import com.moodaklyom.data.model.TaskCreate
-import com.moodaklyom.ui.components.CustomTopAppBar
-import com.moodaklyom.ui.theme.MintPrimary
-import com.moodaklyom.ui.theme.White
+import com.example.moodklyom.data.api.RetrofitClient
+import com.example.moodklyom.data.local.TokenManager
+import com.example.moodklyom.data.model.TaskCreate
+import com.example.moodklyom.ui.components.CustomTopAppBar
+import com.example.moodklyom.ui.theme.MintPrimary
+import com.example.moodklyom.ui.theme.White
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
