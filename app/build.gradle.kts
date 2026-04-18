@@ -56,30 +56,6 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(libs.androidx.material.icons.extended)
-    implementation(libs.material)
-
-    // Retrofit & OkHttp
-    implementation(libs.retrofit)
-    implementation(libs.retrofit.gson)
-    implementation(libs.okhttp)
-    implementation(libs.okhttp.logging)
-
-    // Navigation
-    implementation(libs.androidx.navigation.compose)
-
-    // DataStore
-    implementation(libs.androidx.datastore.preferences)
-
-    // Lifecycle
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-
-    // Accompanist
-    implementation(libs.accompanist.permissions)
-
-    // Splash Screen
-    implementation(libs.androidx.core.splashscreen)
-
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
