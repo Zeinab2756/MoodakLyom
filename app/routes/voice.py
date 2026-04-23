@@ -36,6 +36,13 @@ def _extract_multipart_parts(content_type: str, body: bytes) -> tuple[bytes | No
     return audio_bytes, filename, language
 
 
+def _save_temp_audio_file(audio_bytes: bytes, filename: str | None) -> str:
+    suffix = Path(filename or "audio.m4a").suffix or ".m4a"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+        temp_file.write(audio_bytes)
+        return temp_file.name
+
+
 @router.post("/transcribe", response_model=TranscriptionResponse)
 async def transcribe_voice(
     request: Request,
@@ -50,13 +57,9 @@ async def transcribe_voice(
     if not audio_bytes:
         return TranscriptionResponse(success=False, text=None, message="Missing audio_file field")
 
-    suffix = Path(filename or "audio.m4a").suffix or ".m4a"
     temp_path = None
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
-            temp_file.write(audio_bytes)
-            temp_path = temp_file.name
-
+        temp_path = _save_temp_audio_file(audio_bytes, filename)
         success, text, message = transcribe_audio_file(temp_path, language=language)
         return TranscriptionResponse(success=success, text=text, message=message)
     finally:
