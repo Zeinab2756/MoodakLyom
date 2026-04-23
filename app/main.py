@@ -49,6 +49,7 @@ with SessionLocal() as db:
     ensure_default_hacks(db)
 
 from app.routes import hack as hack_routes
+from app.routes import emotion_routes
 from app.routes import mood as mood_routes
 from app.routes import profile as profile_routes
 from app.routes import resources as resource_routes
@@ -57,6 +58,7 @@ from app.routes import user as user_routes
 from app.routes import voice as voice_routes
 
 app.include_router(user_routes.router, prefix="/user", tags=["User"])
+app.include_router(emotion_routes.router)
 app.include_router(mood_routes.router, prefix="/mood", tags=["Mood"])
 app.include_router(task_routes.router, prefix="/tasks", tags=["Tasks"])
 app.include_router(profile_routes.router, prefix="/profile", tags=["Profile"])
