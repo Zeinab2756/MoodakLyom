@@ -39,7 +39,9 @@ class AcousticEmotionPredictor:
             import numpy as np
             import soundfile
             import torch
-            from transformers import AutoFeatureExtractor, AutoModelForAudioClassification
+            from huggingface_hub import hf_hub_download
+            from safetensors.torch import load_file
+            from transformers import AutoConfig, AutoFeatureExtractor, Wav2Vec2ForSequenceClassification
         except ImportError as exc:
             raise RuntimeError("Acoustic emotion dependencies are not installed") from exc
 
@@ -49,8 +51,19 @@ class AcousticEmotionPredictor:
         self._torch = torch
         self._device = "cuda" if torch.cuda.is_available() else "cpu"
 
+        config = AutoConfig.from_pretrained(self.model_name)
+        config.classifier_proj_size = config.hidden_size
         self.feature_extractor = AutoFeatureExtractor.from_pretrained(self.model_name)
-        self.model = AutoModelForAudioClassification.from_pretrained(self.model_name)
+        self.model = Wav2Vec2ForSequenceClassification(config)
+        model_path = hf_hub_download(self.model_name, "model.safetensors")
+        state_dict = load_file(model_path)
+
+        renamed_state_dict = dict(state_dict)
+        renamed_state_dict["projector.weight"] = renamed_state_dict.pop("classifier.dense.weight")
+        renamed_state_dict["projector.bias"] = renamed_state_dict.pop("classifier.dense.bias")
+        renamed_state_dict["classifier.weight"] = renamed_state_dict.pop("classifier.output.weight")
+        renamed_state_dict["classifier.bias"] = renamed_state_dict.pop("classifier.output.bias")
+        self.model.load_state_dict(renamed_state_dict, strict=False)
         self.model.to(self._device)
         self.model.eval()
 
