@@ -5,11 +5,11 @@ import os
 import time
 from functools import partial
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
 from app.dependencies import get_current_user
 from app.models.user import User
-from app.routes.voice import _extract_multipart_parts, _save_temp_audio_file
+from app.routes.voice import _save_temp_audio_file
 from app.schemas.mood_analysis import MoodAnalyzeResponse
 from app.schemas.emotion_schemas import EmotionDistribution
 from app.services.acoustic_emotion import predict_acoustic_emotion
@@ -18,6 +18,7 @@ from app.services.text_emotion import predict_text_emotion
 from app.services.transcription import transcribe_audio_file
 
 router = APIRouter(prefix="/mood", tags=["Mood Analysis"])
+MAX_AUDIO_DURATION_SECONDS = 30.0
 
 
 def _format_warning(prefix: str, exc: Exception) -> str:
@@ -25,9 +26,43 @@ def _format_warning(prefix: str, exc: Exception) -> str:
     return f"{prefix}: {message}"
 
 
+def _inspect_audio_file(audio_path: str) -> float:
+    try:
+        import soundfile
+    except ImportError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Audio validation dependency is not installed",
+        ) from exc
+
+    try:
+        info = soundfile.info(audio_path)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid audio upload",
+        ) from exc
+
+    if not info.samplerate or info.frames <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid audio upload",
+        )
+
+    duration_seconds = info.frames / info.samplerate
+    if duration_seconds > MAX_AUDIO_DURATION_SECONDS:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Audio duration exceeds {int(MAX_AUDIO_DURATION_SECONDS)} seconds",
+        )
+
+    return duration_seconds
+
+
 @router.post("/analyze", response_model=MoodAnalyzeResponse)
 async def analyze_mood(
-    request: Request,
+    audio_file: UploadFile = File(...),
+    language: str | None = Form(None),
     _current_user: User = Depends(get_current_user),
 ):
     started_at = time.perf_counter()
@@ -37,23 +72,16 @@ async def analyze_mood(
     text_emotion: EmotionDistribution | None = None
     acoustic_emotion: EmotionDistribution | None = None
 
-    content_type = request.headers.get("content-type", "")
-    if "multipart/form-data" not in content_type:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Expected multipart/form-data",
-        )
-
-    body = await request.body()
-    audio_bytes, filename, language = _extract_multipart_parts(content_type, body)
+    audio_bytes = await audio_file.read()
     if not audio_bytes:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Missing audio_file field",
         )
 
-    temp_path = _save_temp_audio_file(audio_bytes, filename)
+    temp_path = _save_temp_audio_file(audio_bytes, audio_file.filename)
     try:
+        _inspect_audio_file(temp_path)
         loop = asyncio.get_running_loop()
         try:
             transcribe_result = await loop.run_in_executor(
