@@ -3,7 +3,12 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from app.core.config import ACOUSTIC_EMOTION_LABEL_MAP, SHARED_EMOTION_TAXONOMY
 from app.schemas.emotion_schemas import EmotionDistribution
+
+
+class AcousticEmotionError(RuntimeError):
+    """Raised when acoustic emotion inference cannot process an audio input."""
 
 
 class AcousticEmotionPredictor:
@@ -51,9 +56,15 @@ class AcousticEmotionPredictor:
 
     def _load_audio(self, audio_path: str | Path):
         self._ensure_loaded()
+        audio_path = Path(audio_path)
+        if not audio_path.exists():
+            raise AcousticEmotionError(f"Audio file not found: {audio_path}")
 
-        waveform, sample_rate = self._soundfile.read(str(audio_path), always_2d=False)
-        waveform = self._np.asarray(waveform, dtype=self._np.float32)
+        try:
+            waveform, sample_rate = self._soundfile.read(str(audio_path), always_2d=False)
+            waveform = self._np.asarray(waveform, dtype=self._np.float32)
+        except Exception as exc:
+            raise AcousticEmotionError(f"Invalid audio input: {audio_path}") from exc
 
         if waveform.ndim > 1:
             axis = 1 if waveform.shape[0] >= waveform.shape[1] else 0
@@ -68,37 +79,60 @@ class AcousticEmotionPredictor:
 
         return waveform
 
+    def _normalize_distribution(self, distribution: dict[str, float]) -> dict[str, float]:
+        normalized = {label: 0.0 for label in SHARED_EMOTION_TAXONOMY}
+        for raw_label, probability in distribution.items():
+            mapped_label = ACOUSTIC_EMOTION_LABEL_MAP.get(raw_label.strip().lower())
+            if not mapped_label:
+                continue
+            normalized[mapped_label] += max(float(probability), 0.0)
+
+        total = sum(normalized.values())
+        if total <= 0:
+            return normalized
+
+        return {
+            label: probability / total
+            for label, probability in normalized.items()
+        }
+
     def predict(self, audio_path: str | Path) -> EmotionDistribution:
-        self._ensure_loaded()
-        waveform = self._load_audio(audio_path)
+        try:
+            self._ensure_loaded()
+            waveform = self._load_audio(audio_path)
 
-        inputs = self.feature_extractor(
-            waveform,
-            sampling_rate=self.target_sample_rate,
-            return_tensors="pt",
-            padding=True,
-        )
-        inputs = {
-            name: value.to(self._device)
-            for name, value in inputs.items()
-        }
+            inputs = self.feature_extractor(
+                waveform,
+                sampling_rate=self.target_sample_rate,
+                return_tensors="pt",
+                padding=True,
+            )
+            inputs = {
+                name: value.to(self._device)
+                for name, value in inputs.items()
+            }
 
-        with self._torch.no_grad():
-            logits = self.model(**inputs).logits
-            probabilities = self._torch.softmax(logits, dim=-1).squeeze(0).cpu().numpy()
+            with self._torch.no_grad():
+                logits = self.model(**inputs).logits
+                probabilities = self._torch.softmax(logits, dim=-1).squeeze(0).cpu().numpy()
 
-        distribution = {
-            str(self.model.config.id2label[index]).strip().lower(): float(probability)
-            for index, probability in enumerate(probabilities.tolist())
-        }
-        label, confidence = max(distribution.items(), key=lambda item: item[1])
+            raw_distribution = {
+                str(self.model.config.id2label[index]).strip().lower(): float(probability)
+                for index, probability in enumerate(probabilities.tolist())
+            }
+            distribution = self._normalize_distribution(raw_distribution)
+            label, confidence = max(distribution.items(), key=lambda item: item[1])
 
-        return EmotionDistribution(
-            label=label,
-            confidence=confidence,
-            distribution=distribution,
-            source="acoustic",
-        )
+            return EmotionDistribution(
+                label=label,
+                confidence=confidence,
+                distribution=distribution,
+                source="acoustic",
+            )
+        except AcousticEmotionError:
+            raise
+        except Exception as exc:
+            raise AcousticEmotionError("Acoustic emotion inference failed") from exc
 
 
 acoustic_emotion_predictor = AcousticEmotionPredictor()

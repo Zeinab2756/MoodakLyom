@@ -17,6 +17,7 @@ class FusedMood(BaseModel):
     confidence: float
     distribution: dict[str, float] = Field(default_factory=dict)
     sarcasm_suspected: bool = False
+    warnings: list[str] = Field(default_factory=list)
 
 
 def _normalize_distribution(distribution: dict[str, float]) -> dict[str, float]:
@@ -42,8 +43,10 @@ def _project_distribution(
         return {}
 
     raw_distribution = emotion.distribution or {}
-    if not raw_distribution and emotion.label:
+    if not raw_distribution and emotion.label and emotion.confidence > 0:
         raw_distribution = {emotion.label: emotion.confidence or 1.0}
+    if not raw_distribution:
+        return {}
 
     for raw_label, probability in raw_distribution.items():
         normalized_label = label_map.get(raw_label.strip().lower())
@@ -68,6 +71,7 @@ def fuse(
 ) -> FusedMood:
     acoustic_shared = _project_distribution(acoustic_dist, ACOUSTIC_EMOTION_LABEL_MAP)
     text_shared = _project_distribution(text_dist, TEXT_EMOTION_LABEL_MAP)
+    warnings: list[str] = []
 
     audio_available = bool(acoustic_shared)
     text_available = bool(text_shared)
@@ -78,6 +82,7 @@ def fuse(
             confidence=0.0,
             distribution={label: 0.0 for label in SHARED_EMOTION_TAXONOMY},
             sarcasm_suspected=False,
+            warnings=["No emotion modalities were available for fusion"],
         )
 
     if audio_available and text_available:
@@ -87,9 +92,11 @@ def fuse(
     elif audio_available:
         audio_weight = 1.0
         text_weight = 0.0
+        warnings.append("Single modality fusion: using acoustic signal only")
     else:
         audio_weight = 0.0
         text_weight = 1.0
+        warnings.append("Single modality fusion: using text signal only")
 
     fused_distribution = {
         label: (acoustic_shared.get(label, 0.0) * audio_weight)
@@ -101,6 +108,9 @@ def fuse(
     fused_label, fused_confidence = _top_label(fused_distribution)
     audio_label, audio_confidence = _top_label(acoustic_shared)
     text_label, text_confidence = _top_label(text_shared)
+
+    if audio_available != text_available:
+        fused_confidence = min(fused_confidence, 0.75)
 
     sarcasm_suspected = (
         audio_available
@@ -115,4 +125,5 @@ def fuse(
         confidence=fused_confidence,
         distribution=fused_distribution,
         sarcasm_suspected=sarcasm_suspected,
+        warnings=warnings,
     )
