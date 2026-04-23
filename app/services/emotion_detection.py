@@ -2,7 +2,11 @@
 Emotion Detection Service
 Interface for calling the teammate's AI model to detect emotions from text.
 """
+import asyncio
+import json
 import os
+import urllib.error
+import urllib.request
 from typing import Dict, Any, Optional
 from dotenv import load_dotenv
 
@@ -30,36 +34,24 @@ async def predict_external_emotion(text: str) -> Dict[str, Any]:
             "Please set EMOTION_API_URL to an HTTP endpoint or implement local model loading."
         )
 
-    try:
-        import httpx
-    except ImportError:
-        try:
-            import requests
+    payload = json.dumps({"text": text}).encode("utf-8")
+    request = urllib.request.Request(
+        EMOTION_API_URL,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
 
-            response = requests.post(
-                EMOTION_API_URL,
-                json={"text": text},
-                timeout=EMOTION_API_TIMEOUT,
-            )
-            response.raise_for_status()
-            return format_emotion_result(response.json())
-        except Exception as exc:
-            message = str(exc)
-            if _is_connection_error(message):
-                raise ConnectionError(f"Emotion API at {EMOTION_API_URL} is not available") from exc
-            raise Exception(f"Failed to call emotion detection API: {message}") from exc
+    def _make_request() -> Dict[str, Any]:
+        with urllib.request.urlopen(request, timeout=EMOTION_API_TIMEOUT) as response:
+            return json.loads(response.read().decode("utf-8"))
 
     try:
-        async with httpx.AsyncClient(timeout=EMOTION_API_TIMEOUT) as client:
-            response = await client.post(
-                EMOTION_API_URL,
-                json={"text": text},
-            )
-            response.raise_for_status()
-            return format_emotion_result(response.json())
+        raw_result = await asyncio.get_running_loop().run_in_executor(None, _make_request)
+        return format_emotion_result(raw_result)
     except Exception as exc:
         message = str(exc)
-        if _is_connection_error(message):
+        if isinstance(exc, urllib.error.URLError) or _is_connection_error(message):
             raise ConnectionError(f"Emotion API at {EMOTION_API_URL} is not available") from exc
         raise Exception(f"Failed to call emotion detection API: {message}") from exc
 
