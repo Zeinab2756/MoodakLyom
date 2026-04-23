@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from app.models.emotion_model import emotion_classifier
 from app.schemas.emotion_schemas import EmotionRequest, EmotionResponse
+from app.services.text_emotion import predict_text_emotion_async
 
 router = APIRouter(prefix="/emotion", tags=["emotion"])
 
@@ -11,14 +11,19 @@ async def analyze_emotion(request: EmotionRequest):
     Analyze emotion from user text using fine-tuned BERT.
     """
     try:
-        result = emotion_classifier.predict_emotion(request.text)
+        result = await predict_text_emotion_async(request.text)
 
-        # result already has the right keys:
-        # primary_emotion, confidence, alternative_emotions
         return EmotionResponse(
-            primary_emotion=result["primary_emotion"],
-            confidence=result["confidence"],
-            alternative_emotions=result["alternative_emotions"],
+            primary_emotion=result.label,
+            confidence=result.confidence,
+            alternative_emotions=[
+                {"emotion": label, "probability": probability}
+                for label, probability in sorted(
+                    result.distribution.items(),
+                    key=lambda item: item[1],
+                    reverse=True,
+                )[:3]
+            ],
         )
     except Exception as e:
         raise HTTPException(
@@ -33,9 +38,9 @@ async def emotion_health_check():
     Simple health check: run a test prediction and return it.
     """
     test_text = "I am very happy today!"
-    result = emotion_classifier.predict_emotion(test_text)
+    result = await predict_text_emotion_async(test_text)
     return {
         "status": "ok",
         "sample_text": test_text,
-        "prediction": result,
+        "prediction": result.model_dump(),
     }

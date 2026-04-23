@@ -13,100 +13,71 @@ EMOTION_API_URL = os.getenv("EMOTION_API_URL", "http://0.0.0.0:8000/emotion/emot
 EMOTION_API_TIMEOUT = int(os.getenv("EMOTION_API_TIMEOUT", "30"))
 
 
+def _is_connection_error(message: str) -> bool:
+    return any(keyword in message.lower() for keyword in ["connect", "connection", "timeout", "refused", "unreachable"])
+
+
+async def predict_external_emotion(text: str) -> Dict[str, Any]:
+    """
+    Send text to the external emotion detection backend and return a normalized result.
+
+    Raises:
+        Exception: If the API call fails or no external backend is configured.
+    """
+    if not EMOTION_API_URL.startswith("http"):
+        raise NotImplementedError(
+            "Local model loading not yet implemented. "
+            "Please set EMOTION_API_URL to an HTTP endpoint or implement local model loading."
+        )
+
+    try:
+        import httpx
+    except ImportError:
+        try:
+            import requests
+
+            response = requests.post(
+                EMOTION_API_URL,
+                json={"text": text},
+                timeout=EMOTION_API_TIMEOUT,
+            )
+            response.raise_for_status()
+            return format_emotion_result(response.json())
+        except Exception as exc:
+            message = str(exc)
+            if _is_connection_error(message):
+                raise ConnectionError(f"Emotion API at {EMOTION_API_URL} is not available") from exc
+            raise Exception(f"Failed to call emotion detection API: {message}") from exc
+
+    try:
+        async with httpx.AsyncClient(timeout=EMOTION_API_TIMEOUT) as client:
+            response = await client.post(
+                EMOTION_API_URL,
+                json={"text": text},
+            )
+            response.raise_for_status()
+            return format_emotion_result(response.json())
+    except Exception as exc:
+        message = str(exc)
+        if _is_connection_error(message):
+            raise ConnectionError(f"Emotion API at {EMOTION_API_URL} is not available") from exc
+        raise Exception(f"Failed to call emotion detection API: {message}") from exc
+
+
+def predict_keyword_emotion(text: str) -> Dict[str, Any]:
+    """Predict emotion from text with the lightweight keyword fallback."""
+    return _fallback_emotion_detection(text)
+
+
 async def detect_emotions_from_text(text: str) -> Dict[str, Any]:
     """
-    Send text to the emotion detection AI model and return detected emotions.
-    
-    Args:
-        text: The transcribed text from the voice recording
-        
-    Returns:
-        Dictionary containing emotion detection results
-        Expected format: {
-            "emotion": "happy",  # Primary emotion detected
-            "emotion_level": 8,  # Emotion intensity level (1-10)
-            "mood_level": 4,  # Converted to 1-5 scale for mood entries
-            "confidence": 1.0,  # Confidence (derived from emotion_level)
-            "tags": ["happy"],  # Tags based on emotion
-            "emotions": ["happy"]  # List format for compatibility
-        }
-        
-    Raises:
-        Exception: If the API call fails
+    Compatibility wrapper that prefers the external emotion backend and degrades to the keyword fallback.
     """
     try:
-        # Option 1: HTTP API call (if the model is served as an API)
-        if EMOTION_API_URL.startswith("http"):
-            try:
-                import httpx
-            except ImportError:
-                # Fallback to requests if httpx not available
-                try:
-                    import requests
-                    response = requests.post(
-                        EMOTION_API_URL,
-                        json={"text": text},
-                        timeout=EMOTION_API_TIMEOUT
-                    )
-                    response.raise_for_status()
-                    return format_emotion_result(response.json())
-                except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
-                    # If API is not available, fall back to simple emotion detection
-                    print(f"WARNING: Emotion API at {EMOTION_API_URL} is not available ({type(e).__name__}). Using fallback emotion detection.")
-                    return _fallback_emotion_detection(text)
-                except Exception as e:
-                    # For other request errors, try fallback
-                    error_msg = str(e)
-                    if any(keyword in error_msg.lower() for keyword in ["connect", "connection", "timeout", "refused", "unreachable"]):
-                        print(f"WARNING: Emotion API at {EMOTION_API_URL} is not available. Using fallback emotion detection.")
-                        return _fallback_emotion_detection(text)
-                    raise
-            
-            # Use async httpx for better performance
-            try:
-                async with httpx.AsyncClient(timeout=EMOTION_API_TIMEOUT) as client:
-                    response = await client.post(
-                        EMOTION_API_URL,
-                        json={"text": text}
-                    )
-                    response.raise_for_status()
-                    return format_emotion_result(response.json())
-            except (httpx.ConnectError, httpx.TimeoutException, httpx.NetworkError) as e:
-                # If API is not available, fall back to simple emotion detection
-                print(f"WARNING: Emotion API at {EMOTION_API_URL} is not available ({type(e).__name__}). Using fallback emotion detection.")
-                return _fallback_emotion_detection(text)
-            except Exception as e:
-                # For other httpx errors, check if it's connection-related
-                error_msg = str(e)
-                if any(keyword in error_msg.lower() for keyword in ["connect", "connection", "timeout", "refused", "unreachable"]):
-                    print(f"WARNING: Emotion API at {EMOTION_API_URL} is not available. Using fallback emotion detection.")
-                    return _fallback_emotion_detection(text)
-                raise
-        
-        # Option 2: Local file-based model (if the model is a local file)
-        # This is a placeholder - you'll need to implement based on your teammate's model format
-        # For example, if it's a pickle file, TensorFlow model, etc.
-        else:
-            # TODO: Implement local model loading and prediction
-            # Example structure:
-            # model = load_model(EMOTION_API_URL)  # or load from file path
-            # result = model.predict(text)
-            # return format_emotion_result(result)
-            raise NotImplementedError(
-                "Local model loading not yet implemented. "
-                "Please set EMOTION_API_URL to an HTTP endpoint or implement local model loading."
-            )
-            
-    except Exception as e:
-        # Handle both httpx and requests exceptions
-        error_msg = str(e)
-        # If connection fails, use fallback emotion detection
-        if "connect" in error_msg.lower() or "connection" in error_msg.lower() or "timeout" in error_msg.lower():
-            print(f"WARNING: Emotion API at {EMOTION_API_URL} is not available. Using fallback emotion detection.")
-            return _fallback_emotion_detection(text)
-        if "httpx" in error_msg.lower() or "request" in error_msg.lower():
-            raise Exception(f"Failed to call emotion detection API: {error_msg}")
-        raise Exception(f"Error in emotion detection: {error_msg}")
+        return await predict_external_emotion(text)
+    except Exception as exc:
+        print(f"WARNING: {exc}. Using fallback emotion detection.")
+        return predict_keyword_emotion(text)
 
 
 def format_emotion_result(raw_result: Dict[str, Any]) -> Dict[str, Any]:

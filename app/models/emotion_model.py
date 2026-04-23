@@ -40,9 +40,19 @@ class EmotionClassifier:
 
     def predict_emotion(self, text: str):
         if not text:
-            return {"primary_emotion": None, "confidence": 0.0, "alternative_emotions": []}
+            return {
+                "primary_emotion": None,
+                "confidence": 0.0,
+                "alternative_emotions": [],
+                "distribution": {},
+            }
         if not self._ensure_loaded():
-            return {"primary_emotion": None, "confidence": 0.0, "alternative_emotions": []}
+            return {
+                "primary_emotion": None,
+                "confidence": 0.0,
+                "alternative_emotions": [],
+                "distribution": {},
+            }
 
         inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True)
         with self._torch.no_grad():
@@ -50,6 +60,10 @@ class EmotionClassifier:
             logits = outputs.logits
             probs = self._functional.softmax(logits, dim=1).squeeze().cpu().numpy()
 
+        distribution = {
+            self.emotions[index]: float(probability)
+            for index, probability in enumerate(probs.tolist())
+        }
         top3_idx = probs.argsort()[-3:][::-1]
         top3_emotions = [self.emotions[i] for i in top3_idx]
         top3_probs = [float(probs[i]) for i in top3_idx]
@@ -57,6 +71,8 @@ class EmotionClassifier:
         return {
             "primary_emotion": top3_emotions[0],
             "confidence": top3_probs[0],
+            "label": top3_emotions[0],
+            "distribution": distribution,
             "alternative_emotions": [
                 {"emotion": emo, "probability": prob}
                 for emo, prob in zip(top3_emotions, top3_probs)
