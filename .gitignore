@@ -16,5 +16,7 @@ __pycache__/
 *.pyd
 
 *.log
+.coverage
+coverage.xml
 .DS_Store
 Thumbs.db
