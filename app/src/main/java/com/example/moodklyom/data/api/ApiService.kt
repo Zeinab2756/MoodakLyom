@@ -100,6 +100,13 @@ interface ApiService {
         @Part("language") language: RequestBody?
     ): Response<TranscriptionResponse>
 
+    @Multipart
+    @POST("mood/analyze")
+    suspend fun analyzeMood(
+        @Part audioFile: MultipartBody.Part,
+        @Part("language") language: RequestBody?
+    ): Response<MoodAnalysisResponse>
+
     // Health
     @GET("/")
     suspend fun healthCheck(): Response<Map<String, String>>

@@ -3,35 +3,60 @@ package com.example.moodklyom.ui.screens
 import android.Manifest
 import android.content.Context
 import android.media.MediaRecorder
+import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.moodklyom.data.api.RetrofitClient
+import com.example.moodklyom.data.local.TokenManager
+import com.example.moodklyom.data.model.MoodAnalysisResponse
+import com.example.moodklyom.data.model.MoodCreate
+import com.example.moodklyom.ui.components.CustomTopAppBar
+import com.example.moodklyom.ui.theme.MintPrimary
+import com.example.moodklyom.ui.theme.White
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import com.example.moodklyom.data.api.RetrofitClient
-import com.example.moodklyom.data.local.TokenManager
-import com.example.moodklyom.data.model.MoodCreate
-import com.example.moodklyom.data.model.TranscriptionResponse
 import kotlinx.coroutines.flow.first
-import com.example.moodklyom.ui.components.CustomTopAppBar
-import com.example.moodklyom.ui.theme.MintPrimary
-import com.example.moodklyom.ui.theme.MintLight
-import com.example.moodklyom.ui.theme.White
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -41,6 +66,7 @@ import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.OptIn
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -54,11 +80,9 @@ fun AddMoodScreen(navController: NavController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // Audio recording state
     var mediaRecorder: MediaRecorder? by remember { mutableStateOf(null) }
     var audioFile: File? by remember { mutableStateOf(null) }
 
-    // Permissions
     val recordAudioPermission = rememberPermissionState(Manifest.permission.RECORD_AUDIO)
     val readStoragePermission = rememberPermissionState(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -68,39 +92,36 @@ fun AddMoodScreen(navController: NavController) {
         }
     )
 
+    fun applyMoodAnalysis(response: MoodAnalysisResponse) {
+        if (!response.transcript.isNullOrBlank()) {
+            notes = response.transcript
+        }
+        detectedEmotionLabel = formatMoodLabel(response.mood)
+        selectedMood = moodLabelToSliderValue(response.mood)
+        transcriptionError = if (response.degraded && response.warnings.isNotEmpty()) {
+            response.warnings.joinToString("\n")
+        } else {
+            null
+        }
+    }
+
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
-        uri?.let { pickedUri ->
+        if (uri == null) {
+            isTranscribing = false
+        } else {
             scope.launch {
-
                 isTranscribing = true
                 transcriptionError = null
 
-                transcribeAudioFile(context, uri = pickedUri) { result ->
-
+                analyzeAudioWithAi(context, uri = uri) { result ->
                     if (result.isSuccess) {
-                        val response = result.getOrNull()
-
-                        // ✅ ONLY USE TEXT (correct backend field)
-                        if (response?.success == true && !response.text.isNullOrBlank()) {
-
-                            notes = response.text
-
-                            // ❌ REMOVE emotion logic (not returned)
-                            detectedEmotionLabel = null
-
-                            transcriptionError = null
-
-                        } else {
-                            transcriptionError = "Transcription failed"
-                        }
-
+                        applyMoodAnalysis(result.getOrThrow())
                     } else {
                         transcriptionError =
-                            result.exceptionOrNull()?.message ?: "Failed to transcribe audio"
+                            result.exceptionOrNull()?.message ?: "Failed to analyze audio"
                     }
-
                     isTranscribing = false
                 }
             }
@@ -126,7 +147,6 @@ fun AddMoodScreen(navController: NavController) {
                 color = MintPrimary
             )
 
-            // Mood Selector
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -159,12 +179,11 @@ fun AddMoodScreen(navController: NavController) {
                 }
             }
 
-            // AI Helper Section - Fixed Purple background to Light Green
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer // This is now light green
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
             ) {
                 Column(
@@ -185,87 +204,73 @@ fun AddMoodScreen(navController: NavController) {
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Record Button
                         IconButton(
                             onClick = {
                                 if (isRecording) {
-                                    stopRecording(context, mediaRecorder, audioFile) { file ->
+                                    stopRecording(mediaRecorder, audioFile) { file ->
                                         audioFile = file
                                         isRecording = false
 
-                                        file?.let {
+                                        file?.let { recordedFile ->
                                             scope.launch {
                                                 isTranscribing = true
                                                 transcriptionError = null
 
-                                                transcribeAudioFile(context, null, it) { result ->
-
+                                                analyzeAudioWithAi(context, file = recordedFile) { result ->
                                                     if (result.isSuccess) {
-                                                        val response = result.getOrNull()
-
-                                                        if (response?.success == true && !response.text.isNullOrBlank()) {
-
-                                                            // ✅ ONLY USE WHAT BACKEND RETURNS
-                                                            notes = response.text
-
-                                                            // ❌ REMOVE THESE (not supported now)
-                                                            detectedEmotionLabel = null
-
-                                                            transcriptionError = null
-
-                                                        } else {
-                                                            transcriptionError = "Transcription failed"
-                                                        }
-
+                                                        applyMoodAnalysis(result.getOrThrow())
                                                     } else {
                                                         transcriptionError =
-                                                            result.exceptionOrNull()?.message ?: "Failed to transcribe audio"
+                                                            result.exceptionOrNull()?.message
+                                                                ?: "Failed to analyze audio"
                                                     }
-
                                                     isTranscribing = false
                                                 }
                                             }
                                         }
                                     }
-                                } else {
-                                    if (recordAudioPermission.status.isGranted) {
-                                        notes = ""
-                                        detectedEmotionLabel = null
-                                        transcriptionError = null
-                                        selectedMood = 0
+                                } else if (recordAudioPermission.status.isGranted) {
+                                    notes = ""
+                                    detectedEmotionLabel = null
+                                    transcriptionError = null
+                                    selectedMood = 0
 
-                                        startRecording(context) { recorder, file ->
-                                            mediaRecorder = recorder
-                                            audioFile = file
-                                            isRecording = true
-                                        }
-
-                                    } else {
-                                        recordAudioPermission.launchPermissionRequest()
+                                    startRecording(context) { recorder, file ->
+                                        mediaRecorder = recorder
+                                        audioFile = file
+                                        isRecording = true
                                     }
+                                } else {
+                                    recordAudioPermission.launchPermissionRequest()
                                 }
                             },
                             modifier = Modifier.size(64.dp)
-                        ){
+                        ) {
                             Surface(
                                 modifier = Modifier.size(64.dp),
                                 shape = CircleShape,
-                                color = if (isRecording) MaterialTheme.colorScheme.error else MintPrimary
+                                color = if (isRecording) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MintPrimary
+                                }
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Mic,
-                                    contentDescription = if (isRecording) "Stop Recording" else "Record Voice",
+                                    contentDescription = if (isRecording) {
+                                        "Stop Recording"
+                                    } else {
+                                        "Record Voice"
+                                    },
                                     tint = White,
                                     modifier = Modifier.padding(16.dp)
                                 )
                             }
                         }
 
-                        // Upload Button
                         IconButton(
                             onClick = {
                                 if (readStoragePermission.status.isGranted) {
-                                    isTranscribing = true
                                     filePickerLauncher.launch("audio/*")
                                 } else {
                                     readStoragePermission.launchPermissionRequest()
@@ -289,9 +294,12 @@ fun AddMoodScreen(navController: NavController) {
                     }
 
                     if (isTranscribing) {
-                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = MintPrimary)
+                        LinearProgressIndicator(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MintPrimary
+                        )
                         Text(
-                            text = "Transcribing...",
+                            text = "Analyzing voice...",
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -307,7 +315,6 @@ fun AddMoodScreen(navController: NavController) {
                 }
             }
 
-            // Notes
             OutlinedTextField(
                 value = notes,
                 onValueChange = { notes = it },
@@ -323,17 +330,15 @@ fun AddMoodScreen(navController: NavController) {
                 )
             )
 
-            // Detected Emotion
-            detectedEmotionLabel?.let { emotionName ->
+            detectedEmotionLabel?.let { moodName ->
                 Text(
-                    text = "Your emotion is: $emotionName",
+                    text = "Detected mood: $moodName",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     color = MintPrimary
                 )
             }
 
-            // Save Button
             Button(
                 onClick = {
                     scope.launch {
@@ -342,42 +347,25 @@ fun AddMoodScreen(navController: NavController) {
                             val token = tokenManager.token.first()
                             RetrofitClient.setAuthToken(token)
 
-                            val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-                            val emoji = when (selectedMood) {
-                                1 -> "😢"
-                                2 -> "😣"
-                                3 -> "😥"
-                                4 -> "😕"
-                                5 -> "😐"
-                                6 -> "🙂"
-                                7 -> "😎"
-                                8 -> "🤭"
-                                9 -> "☺️"
-                                10 -> "😄"
-                                else -> "😐"
-                            }
-
-                            val moodLevel = when {
-                                selectedMood <= 2 -> 1
-                                selectedMood <= 4 -> 2
-                                selectedMood <= 6 -> 3
-                                selectedMood <= 8 -> 4
-                                else -> 5
-                            }
+                            val today = SimpleDateFormat(
+                                "yyyy-MM-dd",
+                                Locale.getDefault()
+                            ).format(Date())
 
                             val request = MoodCreate(
                                 date = today,
-                                moodLevel = moodLevel,
-                                emoji = emoji,
+                                moodLevel = moodLevelForSlider(selectedMood),
+                                emoji = moodEmojiForLevel(selectedMood),
                                 emotion = detectedEmotionLabel,
-                                notes = if (notes.isBlank()) null else notes
+                                notes = notes.takeIf { it.isNotBlank() }
                             )
 
                             val response = RetrofitClient.apiService.addMood(request)
                             if (response.isSuccessful && response.body() != null) {
                                 navController.popBackStack()
                             } else {
-                                transcriptionError = response.errorBody()?.string() ?: "Failed to save mood"
+                                transcriptionError =
+                                    response.errorBody()?.string() ?: "Failed to save mood"
                             }
                         } catch (e: Exception) {
                             transcriptionError = e.message ?: "Failed to save mood"
@@ -402,39 +390,78 @@ fun AddMoodScreen(navController: NavController) {
 
 @Composable
 fun MoodButton(level: Int, isSelected: Boolean, onClick: () -> Unit) {
-    val emoji = when (level) {
-        1 -> "😢"
-        2 -> "😣"
-        3 -> "😥"
-        4 -> "😕"
-        5 -> "😐"
-        6 -> "🙂"
-        7 -> "😎"
-        8 -> "🤭"
-        9 -> "☺️"
-        10 -> "😄"
-        else -> "😐"
-    }
-
     Surface(
         onClick = onClick,
         modifier = Modifier.size(64.dp),
         shape = RoundedCornerShape(16.dp),
         color = if (isSelected) MintPrimary else MaterialTheme.colorScheme.surface,
         border = if (!isSelected) {
-            androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-        } else null
+            BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+        } else {
+            null
+        }
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Text(emoji, style = MaterialTheme.typography.headlineMedium)
+            Text(moodEmojiForLevel(level), style = MaterialTheme.typography.headlineMedium)
         }
     }
 }
 
-// Helper functions for audio recording and transcription
+private fun formatMoodLabel(label: String): String {
+    return label
+        .replace('_', ' ')
+        .replace('-', ' ')
+        .trim()
+        .split(Regex("\\s+"))
+        .filter { it.isNotBlank() }
+        .joinToString(" ") { part ->
+            part.lowercase().replaceFirstChar { char ->
+                if (char.isLowerCase()) char.titlecase(Locale.getDefault()) else char.toString()
+            }
+        }
+}
+
+private fun moodLabelToSliderValue(label: String): Int {
+    return when (label.trim().lowercase(Locale.getDefault())) {
+        "happy" -> 9
+        "surprised" -> 8
+        "neutral" -> 5
+        "sad" -> 2
+        "fearful" -> 2
+        "angry" -> 3
+        "disgusted" -> 3
+        else -> 5
+    }
+}
+
+private fun moodLevelForSlider(selectedMood: Int): Int {
+    return when {
+        selectedMood <= 2 -> 1
+        selectedMood <= 4 -> 2
+        selectedMood <= 6 -> 3
+        selectedMood <= 8 -> 4
+        else -> 5
+    }
+}
+
+private fun moodEmojiForLevel(level: Int): String {
+    return when (level) {
+        1 -> "\uD83D\uDE22"
+        2 -> "\uD83D\uDE23"
+        3 -> "\uD83D\uDE25"
+        4 -> "\uD83D\uDE15"
+        5 -> "\uD83D\uDE10"
+        6 -> "\uD83D\uDE42"
+        7 -> "\uD83D\uDE0E"
+        8 -> "\uD83E\uDD2D"
+        9 -> "\u263A\uFE0F"
+        10 -> "\uD83D\uDE04"
+        else -> "\uD83D\uDE10"
+    }
+}
 
 fun startRecording(context: Context, onStarted: (MediaRecorder, File) -> Unit) {
     try {
@@ -473,7 +500,7 @@ fun startRecording(context: Context, onStarted: (MediaRecorder, File) -> Unit) {
     }
 }
 
-fun stopRecording(context: Context, mediaRecorder: MediaRecorder?, audioFile: File?, onStopped: (File?) -> Unit) {
+fun stopRecording(mediaRecorder: MediaRecorder?, audioFile: File?, onStopped: (File?) -> Unit) {
     try {
         mediaRecorder?.apply {
             stop()
@@ -486,24 +513,22 @@ fun stopRecording(context: Context, mediaRecorder: MediaRecorder?, audioFile: Fi
     }
 }
 
-suspend fun transcribeAudioFile(
+suspend fun analyzeAudioWithAi(
     context: Context,
-    uri: android.net.Uri? = null,
+    uri: Uri? = null,
     file: File? = null,
-    onResult: (Result<TranscriptionResponse>) -> Unit
+    onResult: (Result<MoodAnalysisResponse>) -> Unit
 ) {
     try {
-        val audioFile = file ?: run {
-            uri?.let {
-                val inputStream = context.contentResolver.openInputStream(it)
-                val tempFile = File(context.cacheDir, "temp_audio_${System.currentTimeMillis()}.m4a")
-                inputStream?.use { input ->
-                    tempFile.outputStream().use { output ->
-                        input.copyTo(output)
-                    }
+        val audioFile = file ?: uri?.let { sourceUri ->
+            val inputStream = context.contentResolver.openInputStream(sourceUri)
+            val tempFile = File(context.cacheDir, "temp_audio_${System.currentTimeMillis()}.m4a")
+            inputStream?.use { input ->
+                tempFile.outputStream().use { output ->
+                    input.copyTo(output)
                 }
-                tempFile
             }
+            tempFile
         }
 
         if (audioFile == null || !audioFile.exists()) {
@@ -515,21 +540,16 @@ suspend fun transcribeAudioFile(
         val token = tokenManager.token.first()
         RetrofitClient.setAuthToken(token)
 
-        val fileName = if (audioFile.name.endsWith(".m4a") || audioFile.name.endsWith(".mp3") ||
-            audioFile.name.endsWith(".wav") || audioFile.name.endsWith(".ogg")) {
-            audioFile.name
-        } else {
-            "${audioFile.name}.m4a"
-        }
-        val requestFile = audioFile.asRequestBody("audio/m4a".toMediaTypeOrNull())
+        val fileName = ensureSupportedAudioExtension(audioFile.name)
+        val requestFile = audioFile
+            .asRequestBody(audioMediaTypeForFile(fileName).toMediaTypeOrNull())
         val audioPart = MultipartBody.Part.createFormData("audio_file", fileName, requestFile)
 
-        val response = RetrofitClient.apiService.transcribeVoice(audioPart, null)
-
+        val response = RetrofitClient.apiService.analyzeMood(audioPart, null)
         if (response.isSuccessful && response.body() != null) {
             onResult(Result.success(response.body()!!))
         } else {
-            val errorMsg = response.errorBody()?.string() ?: "Transcription failed"
+            val errorMsg = response.errorBody()?.string() ?: "Mood analysis failed"
             onResult(Result.failure(Exception(errorMsg)))
         }
 
@@ -538,5 +558,27 @@ suspend fun transcribeAudioFile(
         }
     } catch (e: Exception) {
         onResult(Result.failure(e))
+    }
+}
+
+private fun ensureSupportedAudioExtension(fileName: String): String {
+    return if (
+        fileName.endsWith(".m4a", ignoreCase = true) ||
+        fileName.endsWith(".mp3", ignoreCase = true) ||
+        fileName.endsWith(".wav", ignoreCase = true) ||
+        fileName.endsWith(".ogg", ignoreCase = true)
+    ) {
+        fileName
+    } else {
+        "$fileName.m4a"
+    }
+}
+
+private fun audioMediaTypeForFile(fileName: String): String {
+    return when {
+        fileName.endsWith(".wav", ignoreCase = true) -> "audio/wav"
+        fileName.endsWith(".mp3", ignoreCase = true) -> "audio/mpeg"
+        fileName.endsWith(".ogg", ignoreCase = true) -> "audio/ogg"
+        else -> "audio/mp4"
     }
 }
