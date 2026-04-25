@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaRecorder
+import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -621,13 +622,18 @@ suspend fun createProposedTasksForMood(mood: String): List<Int> {
 }
 
 private fun showProposedTasksNotification(context: Context, taskIds: List<Int>) {
-    val channelId = "proposed_tasks"
+    val channelId = "proposed_tasks_ready"
+    val notificationSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         val channel = NotificationChannel(
             channelId,
             "Proposed Tasks",
-            NotificationManager.IMPORTANCE_DEFAULT
-        )
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "Alerts when mood-based tasks are ready"
+            enableVibration(true)
+            setSound(notificationSound, null)
+        }
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(channel)
     }
@@ -658,8 +664,11 @@ private fun showProposedTasksNotification(context: Context, taskIds: List<Int>) 
         .setContentTitle("Your suggested tasks are ready")
         .setContentText("Tap to see the tasks proposed from your mood.")
         .setContentIntent(pendingIntent)
+        .setDefaults(NotificationCompat.DEFAULT_ALL)
+        .setSound(notificationSound)
         .setAutoCancel(true)
-        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        .setCategory(NotificationCompat.CATEGORY_REMINDER)
+        .setPriority(NotificationCompat.PRIORITY_HIGH)
         .build()
 
     NotificationManagerCompat.from(context).notify(2001, notification)
