@@ -361,7 +361,7 @@ fun AddMoodScreen(navController: NavController) {
                                 date = today,
                                 moodLevel = moodLevelForSlider(selectedMood),
                                 emoji = moodEmojiForLevel(selectedMood),
-                                emotion = detectedEmotionLabel,
+                                emotion = moodEmotionForLevel(selectedMood),
                                 notes = notes.takeIf { it.isNotBlank() }
                             )
 
@@ -465,6 +465,22 @@ private fun moodEmojiForLevel(level: Int): String {
         9 -> "\u263A\uFE0F"
         10 -> "\uD83D\uDE04"
         else -> "\uD83D\uDE10"
+    }
+}
+
+private fun moodEmotionForLevel(level: Int): String {
+    return when (level) {
+        1 -> "sad"
+        2 -> "frustrated"
+        3 -> "anxious"
+        4 -> "confused"
+        5 -> "neutral"
+        6 -> "content"
+        7 -> "confident"
+        8 -> "playful"
+        9 -> "happy"
+        10 -> "happy"
+        else -> "neutral"
     }
 }
 
