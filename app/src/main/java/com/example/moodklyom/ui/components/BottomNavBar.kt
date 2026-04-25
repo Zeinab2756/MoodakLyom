@@ -21,8 +21,7 @@ fun BottomNavBar(navController: NavController) {
         BottomNavItem("Home", Icons.Default.Home, Screen.Home.route),
         BottomNavItem("Moods", Icons.Default.Favorite, Screen.Moods.route),
         BottomNavItem("Tasks", Icons.Default.CheckCircle, Screen.Tasks.route),
-        BottomNavItem("Hacks", Icons.Default.Lightbulb, Screen.Hacks.route),
-        BottomNavItem("Profile", Icons.Default.Person, Screen.Profile.route)
+        BottomNavItem("Hacks", Icons.Default.Lightbulb, Screen.Hacks.route)
     )
 
     val navBackStackEntry = navController.currentBackStackEntryAsState()

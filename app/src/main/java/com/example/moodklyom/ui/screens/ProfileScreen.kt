@@ -25,7 +25,7 @@ import com.example.moodklyom.data.local.TokenManager
 import com.example.moodklyom.navigation.Screen
 import com.example.moodklyom.ui.components.BottomNavBar
 import com.example.moodklyom.ui.components.CustomTopAppBar
-import com.example.moodklyom.ui.theme.PurplePrimary
+import com.example.moodklyom.ui.theme.MintPrimary
 
 @Composable
 fun ProfileScreen(
@@ -36,7 +36,10 @@ fun ProfileScreen(
     val username by tokenManager.username.collectAsState(initial = "User")
 
     Column(modifier = Modifier.fillMaxSize()) {
-        CustomTopAppBar(title = "Profile")
+        CustomTopAppBar(
+            title = "Profile",
+            onBackClick = { navController.popBackStack() }
+        )
 
         Scaffold(
             bottomBar = { BottomNavBar(navController) }
@@ -50,22 +53,18 @@ fun ProfileScreen(
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
 
-                // Profile header card (Brand purple)
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = PurplePrimary
-                    )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(32.dp))
+                        .background(MintPrimary)
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
                 ) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Avatar
                         Box(
                             modifier = Modifier
                                 .size(80.dp)
@@ -81,7 +80,6 @@ fun ProfileScreen(
                             )
                         }
 
-                        // Username text
                         Text(
                             text = username ?: "User",
                             style = MaterialTheme.typography.headlineSmall,
@@ -127,7 +125,6 @@ fun ProfileScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileMenuItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -150,7 +147,7 @@ fun ProfileMenuItem(
             Icon(
                 imageVector = icon,
                 contentDescription = title,
-                tint = PurplePrimary,
+                tint = MintPrimary,
                 modifier = Modifier.size(24.dp)
             )
 
