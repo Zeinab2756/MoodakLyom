@@ -36,6 +36,37 @@ MOOD_TASK_KEYWORDS = {
     "happy": ["focus", "energy", "habit", "productivity"],
 }
 
+MOOD_TASK_TEMPLATES = {
+    "happy": [
+        (
+            "Celebrate your achievement",
+            "Take a small intentional moment to enjoy the win and let it register.",
+        ),
+        (
+            "Write down what helped you succeed",
+            "Capture the habits, choices, or support that made this achievement possible.",
+        ),
+        (
+            "Plan one next step from this win",
+            "Choose one simple action that keeps the momentum going without rushing the moment.",
+        ),
+    ],
+    "confident": [
+        (
+            "Plan one next step from this win",
+            "Use your confidence to choose one clear next action while your energy is high.",
+        ),
+        (
+            "Write down what helped you succeed",
+            "Save the strategy that worked so you can repeat it later.",
+        ),
+        (
+            "Share the good news with someone supportive",
+            "Tell one person who will celebrate with you and help the moment feel real.",
+        ),
+    ],
+}
+
 
 def _normalize_mood(mood: str) -> str:
     normalized = mood.strip().lower().replace("_", " ").replace("-", " ")
@@ -64,6 +95,19 @@ def _priority_for_mood(mood: str) -> Priority:
     if mood in {"sad", "frustrated", "anxious", "fearful"}:
         return Priority.HIGH
     return Priority.MEDIUM
+
+
+def _template_proposals(mood: str, limit: int) -> list[ProposedTask]:
+    templates = MOOD_TASK_TEMPLATES.get(mood, [])
+    return [
+        ProposedTask(
+            title=title,
+            description=description,
+            priority=_priority_for_mood(mood).value,
+            source_mood=mood,
+        )
+        for title, description in templates[:limit]
+    ]
 
 
 @router.post("/", response_model=TaskSingleResponse)
@@ -140,6 +184,10 @@ def get_proposed_tasks(
     limit: int = Query(3, ge=1, le=5),
 ):
     normalized_mood = _normalize_mood(mood)
+    template_proposals = _template_proposals(normalized_mood, limit)
+    if template_proposals:
+        return ProposedTaskListResponse(data=template_proposals)
+
     keywords = MOOD_TASK_KEYWORDS[normalized_mood]
 
     hacks = db.query(Hack).all()

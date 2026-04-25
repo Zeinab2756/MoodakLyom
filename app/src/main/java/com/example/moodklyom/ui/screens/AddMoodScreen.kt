@@ -546,6 +546,9 @@ private fun extractTaskFromNotes(notes: String): TaskCreate? {
         "i should",
         "i will",
         "i have to",
+        "i was accepted",
+        "got accepted",
+        "accepted in",
         "deadline",
         "due"
     ).any { it in lower }
@@ -576,6 +579,7 @@ private fun extractTaskFromNotes(notes: String): TaskCreate? {
 
 private val TASK_KEYWORD_TITLES = linkedMapOf(
     "presentation" to "Prepare for presentation",
+    "scholarship" to "Review scholarship next steps",
     "exam" to "Study for exam",
     "test" to "Study for test",
     "quiz" to "Study for quiz",
