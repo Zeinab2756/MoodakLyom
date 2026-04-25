@@ -43,6 +43,9 @@ fun HacksScreen(navController: NavController) {
         }
     })
     val uiState by viewModel.uiState.collectAsState()
+    val recommendedHacks = remember(uiState.hacks, uiState.latestMood) {
+        moodRecommendedHacks(uiState.hacks, uiState.latestMood)
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         CustomTopAppBar(
@@ -99,16 +102,6 @@ fun HacksScreen(navController: NavController) {
                             .padding(horizontal = 16.dp, vertical = 10.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        item {
-                            Text(
-                                text = "Wellness tips and tricks",
-                                style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                        }
-
                         if (uiState.hacks.isEmpty()) {
                             item {
                                 Text(
@@ -118,6 +111,46 @@ fun HacksScreen(navController: NavController) {
                                 )
                             }
                         } else {
+                            if (recommendedHacks.isNotEmpty()) {
+                                item {
+                                    Text(
+                                        text = "Recommended for your mood",
+                                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onBackground,
+                                        modifier = Modifier.padding(bottom = 4.dp)
+                                    )
+                                }
+
+                                items(recommendedHacks) { hack ->
+                                    HackCard(
+                                        hack = hack,
+                                        isAdding = uiState.creatingTaskIds.contains(hack.id),
+                                        onAddToTasks = { viewModel.addHackAsTask(hack) }
+                                    )
+                                }
+
+                                item {
+                                    Text(
+                                        text = "All hacks",
+                                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onBackground,
+                                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                                    )
+                                }
+                            } else {
+                                item {
+                                    Text(
+                                        text = "Wellness tips and tricks",
+                                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onBackground,
+                                        modifier = Modifier.padding(bottom = 8.dp)
+                                    )
+                                }
+                            }
+
                             items(uiState.hacks) { hack ->
                                 HackCard(
                                     hack = hack,
@@ -131,6 +164,43 @@ fun HacksScreen(navController: NavController) {
             }
         }
     }
+}
+
+private fun moodRecommendedHacks(
+    hacks: List<WellnessTip>,
+    mood: String?
+): List<WellnessTip> {
+    val normalizedMood = mood
+        ?.lowercase()
+        ?.replace("_", " ")
+        ?.replace("-", " ")
+        ?.trim()
+        ?: return emptyList()
+    val keywords = when {
+        "sad" in normalizedMood -> listOf("stress", "breathing", "reset", "grounding", "wellness")
+        "anx" in normalizedMood || "fear" in normalizedMood -> listOf("stress", "breathing", "grounding", "planning", "reset")
+        "frustr" in normalizedMood || "angry" in normalizedMood -> listOf("stress", "reset", "movement", "focus")
+        "confused" in normalizedMood -> listOf("planning", "focus", "priorities", "productivity")
+        "happy" in normalizedMood || "confident" in normalizedMood -> listOf("focus", "productivity", "priorities", "deep work")
+        else -> listOf("habit", "focus", "wellness", "planning")
+    }
+
+    return hacks
+        .map { hack -> hack to hackMoodScore(hack, keywords) }
+        .filter { (_, score) -> score > 0 }
+        .sortedByDescending { (_, score) -> score }
+        .map { (hack, _) -> hack }
+        .take(3)
+}
+
+private fun hackMoodScore(hack: WellnessTip, keywords: List<String>): Int {
+    val haystack = listOfNotNull(
+        hack.title,
+        hack.description,
+        hack.category,
+        hack.tags?.joinToString(" ")
+    ).joinToString(" ").lowercase()
+    return keywords.count { it in haystack }
 }
 
 @Composable

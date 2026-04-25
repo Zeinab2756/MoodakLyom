@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 data class HacksUiState(
     val isLoading: Boolean = true,
     val hacks: List<WellnessTip> = emptyList(),
+    val latestMood: String? = null,
     val error: String? = null,
     val creatingTaskIds: Set<Int> = emptySet()
 )
@@ -41,6 +42,7 @@ class HacksViewModel(private val tokenManager: TokenManager) : ViewModel() {
                 RetrofitClient.setAuthToken(token)
 
                 val response = RetrofitClient.apiService.getWellnessTips()
+                val moodsResponse = RetrofitClient.apiService.getAllMoods(limit = 1)
 
                 if (!response.isSuccessful) {
                     val errorBody = response.errorBody()?.string()
@@ -55,10 +57,17 @@ class HacksViewModel(private val tokenManager: TokenManager) : ViewModel() {
 
                 val body = response.body()
                 if (body != null && body.isNotEmpty()) {
+                    val latestMood = if (moodsResponse.isSuccessful) {
+                        moodsResponse.body()?.moods?.firstOrNull()?.emotion
+                    } else {
+                        null
+                    }
+
                     _uiState.update {
                         it.copy(
                             isLoading = false,
                             hacks = body,
+                            latestMood = latestMood,
                             error = null,
                             creatingTaskIds = emptySet()
                         )
