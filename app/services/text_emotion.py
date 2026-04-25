@@ -115,6 +115,52 @@ def _capture_attempt(attempt: BackendAttempt, emotion: EmotionDistribution) -> N
     attempt.distribution = emotion.distribution
 
 
+def _explicit_text_signal(text: str) -> EmotionDistribution | None:
+    lowered = f" {text.lower()} "
+    anxious_phrases = (
+        " not prepared",
+        " not ready",
+        " unprepared",
+        " worried",
+        " nervous",
+        " anxious",
+        " scared",
+        " afraid",
+        " stressed",
+        " serious presentation",
+        " important presentation",
+    )
+    sad_phrases = (
+        " not well",
+        " not very well",
+        " don't feel well",
+        " do not feel well",
+        " feel bad",
+        " feeling bad",
+        " not good",
+        " not okay",
+        " not fine",
+    )
+
+    if any(phrase in lowered for phrase in anxious_phrases):
+        return EmotionDistribution(
+            label="anxious",
+            confidence=0.88,
+            distribution={"anxious": 0.88, "neutral": 0.12},
+            source="rules",
+        )
+
+    if any(phrase in lowered for phrase in sad_phrases):
+        return EmotionDistribution(
+            label="sad",
+            confidence=0.86,
+            distribution={"sad": 0.86, "neutral": 0.14},
+            source="rules",
+        )
+
+    return None
+
+
 async def predict_text_emotion_with_diagnostics(text: str) -> tuple[EmotionDistribution, TextEmotionDiagnostics]:
     normalized_text = text.strip()
     if not normalized_text:
@@ -122,6 +168,10 @@ async def predict_text_emotion_with_diagnostics(text: str) -> tuple[EmotionDistr
             EmotionDistribution(label="neutral", confidence=0.0, distribution={}, source="empty"),
             TextEmotionDiagnostics(selected_source="empty"),
         )
+
+    explicit_signal = _explicit_text_signal(normalized_text)
+    if explicit_signal is not None:
+        return explicit_signal, TextEmotionDiagnostics(selected_source="rules")
 
     diagnostics = TextEmotionDiagnostics(selected_source="keyword")
     diagnostics.bert.attempted = True
