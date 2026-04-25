@@ -25,7 +25,7 @@ def test_fuse_agreement_case_prefers_happy_without_sarcasm():
     assert fused.sarcasm_suspected is False
 
 
-def test_fuse_disagreement_case_flags_sarcasm_and_follows_weighted_signal():
+def test_fuse_disagreement_case_flags_sarcasm_and_balances_text_signal():
     acoustic = EmotionDistribution(
         label="sad",
         confidence=0.75,
@@ -41,7 +41,7 @@ def test_fuse_disagreement_case_flags_sarcasm_and_follows_weighted_signal():
 
     fused = fuse(acoustic, text)
 
-    assert fused.label == "sad"
+    assert fused.label == "happy"
     assert fused.sarcasm_suspected is True
 
 

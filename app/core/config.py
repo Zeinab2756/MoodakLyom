@@ -46,5 +46,5 @@ ACOUSTIC_EMOTION_LABEL_MAP = {
     "surprised": "surprised",
 }
 
-FUSION_AUDIO_WEIGHT = float(os.getenv("FUSION_AUDIO_WEIGHT", "0.6"))
-FUSION_TEXT_WEIGHT = float(os.getenv("FUSION_TEXT_WEIGHT", "0.4"))
+FUSION_AUDIO_WEIGHT = float(os.getenv("FUSION_AUDIO_WEIGHT", "0.45"))
+FUSION_TEXT_WEIGHT = float(os.getenv("FUSION_TEXT_WEIGHT", "0.55"))

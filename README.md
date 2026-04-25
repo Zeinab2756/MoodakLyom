@@ -187,8 +187,8 @@ The route does not 500 on a single-branch failure.
 
 Default fusion weights:
 
-- audio: `0.6`
-- text: `0.4`
+- audio: `0.45`
+- text: `0.55`
 
 ## Design Decisions
 
