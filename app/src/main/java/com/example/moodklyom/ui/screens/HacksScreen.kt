@@ -96,7 +96,7 @@ fun HacksScreen(navController: NavController) {
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(padding)
-                            .padding(16.dp),
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         item {

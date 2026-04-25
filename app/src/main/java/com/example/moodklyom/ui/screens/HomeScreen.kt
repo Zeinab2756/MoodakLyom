@@ -46,15 +46,13 @@ fun HomeScreen(navController: NavController) {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(horizontal = 20.dp)
+                    .padding(horizontal = 20.dp, vertical = 10.dp)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Spacer(modifier = Modifier.height(8.dp))
-
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(32.dp),
+                    shape = RoundedCornerShape(28.dp),
                     colors = CardDefaults.cardColors(containerColor = White),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
@@ -69,8 +67,8 @@ fun HomeScreen(navController: NavController) {
                                     )
                                 )
                             )
-                            .padding(24.dp),
-                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(18.dp)
                     ) {
                         Column {
                             Text(
@@ -135,7 +133,7 @@ fun HomeScreen(navController: NavController) {
                     )
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(12.dp))
             }
         }
     }
