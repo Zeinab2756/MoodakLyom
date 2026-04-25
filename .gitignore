@@ -9,6 +9,8 @@ app/build/
 
 local.properties
 *.db
+*.db-journal
+tests/fixture_phone_recording.m4a
 
 __pycache__/
 *.pyc
