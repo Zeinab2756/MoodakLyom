@@ -91,8 +91,12 @@ class HacksViewModel(private val tokenManager: TokenManager) : ViewModel() {
         }
     }
 
-    fun addHackAsTask(hack: WellnessTip, onSuccess: () -> Unit = {}) {
+    fun addHackAsTask(hack: WellnessTip, onSuccess: (Int) -> Unit = {}) {
         viewModelScope.launch {
+            if (_uiState.value.creatingTaskIds.contains(hack.id)) {
+                return@launch
+            }
+
             _uiState.update { it.copy(creatingTaskIds = it.creatingTaskIds + hack.id) }
             try {
                 val token = tokenManager.token.first()
@@ -106,9 +110,10 @@ class HacksViewModel(private val tokenManager: TokenManager) : ViewModel() {
                     )
                 )
 
-                if (response.isSuccessful && response.body()?.success == true) {
+                val createdTaskId = response.body()?.data?.id
+                if (response.isSuccessful && response.body()?.success == true && createdTaskId != null) {
                     _uiState.update { it.copy(creatingTaskIds = it.creatingTaskIds - hack.id) }
-                    onSuccess()
+                    onSuccess(createdTaskId)
                 } else {
                     val msg = response.errorBody()?.string() ?: "Failed to add to tasks"
                     _uiState.update {

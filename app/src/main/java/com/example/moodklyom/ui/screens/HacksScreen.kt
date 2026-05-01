@@ -127,8 +127,8 @@ fun HacksScreen(navController: NavController) {
                                         hack = hack,
                                         isAdding = uiState.creatingTaskIds.contains(hack.id),
                                         onAddToTasks = {
-                                            viewModel.addHackAsTask(hack) {
-                                                navController.navigate(Screen.Tasks.route) {
+                                            viewModel.addHackAsTask(hack) { taskId ->
+                                                navController.navigate("${Screen.Tasks.route}?proposedIds=$taskId") {
                                                     launchSingleTop = true
                                                 }
                                             }
@@ -162,8 +162,8 @@ fun HacksScreen(navController: NavController) {
                                     hack = hack,
                                     isAdding = uiState.creatingTaskIds.contains(hack.id),
                                     onAddToTasks = {
-                                        viewModel.addHackAsTask(hack) {
-                                            navController.navigate(Screen.Tasks.route) {
+                                        viewModel.addHackAsTask(hack) { taskId ->
+                                            navController.navigate("${Screen.Tasks.route}?proposedIds=$taskId") {
                                                 launchSingleTop = true
                                             }
                                         }
