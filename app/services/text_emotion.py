@@ -117,10 +117,35 @@ def _capture_attempt(attempt: BackendAttempt, emotion: EmotionDistribution) -> N
 
 def _explicit_text_signal(text: str) -> EmotionDistribution | None:
     lowered = f" {text.lower()} "
+    crisis_phrases = (
+        " people are dying",
+        " people dying",
+        " beloved people are dying",
+        " people are killed",
+        " people killed",
+        " people are dead",
+        " are dying",
+        " dying",
+        " killed",
+        " dead",
+        " war",
+        " bombing",
+        " bombs",
+        " attack",
+        " attacks",
+        " under attack",
+        " conflict",
+    )
     anxious_phrases = (
         " not prepared",
         " not ready",
         " unprepared",
+        " not able to focus",
+        " unable to focus",
+        " can't focus",
+        " cannot focus",
+        " hard to focus",
+        " difficult to focus",
         " worried",
         " nervous",
         " anxious",
@@ -142,19 +167,27 @@ def _explicit_text_signal(text: str) -> EmotionDistribution | None:
         " not fine",
     )
 
+    if any(phrase in lowered for phrase in crisis_phrases):
+        return EmotionDistribution(
+            label="sad",
+            confidence=0.93,
+            distribution={"sad": 0.93, "fearful": 0.05, "neutral": 0.02},
+            source="rules",
+        )
+
     if any(phrase in lowered for phrase in anxious_phrases):
         return EmotionDistribution(
             label="anxious",
-            confidence=0.88,
-            distribution={"anxious": 0.88, "neutral": 0.12},
+            confidence=0.94,
+            distribution={"anxious": 0.94, "neutral": 0.06},
             source="rules",
         )
 
     if any(phrase in lowered for phrase in sad_phrases):
         return EmotionDistribution(
             label="sad",
-            confidence=0.86,
-            distribution={"sad": 0.86, "neutral": 0.14},
+            confidence=0.92,
+            distribution={"sad": 0.92, "neutral": 0.08},
             source="rules",
         )
 
