@@ -57,11 +57,6 @@ async def add_mood(
     existing_mood = db.query(Mood).filter(
         and_(Mood.user_id == current_user.id, Mood.date == mood_data.date)
     ).first()
-    if existing_mood:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"error": "Mood entry already exists for this date"},
-        )
 
     tags_string = None
     if mood_data.tags:
@@ -80,12 +75,23 @@ async def add_mood(
                 detail={"error": "Unsupported emotion selection"},
             )
 
+    resolved_emotion = mood_data.emotion or emoji_emotion
+    if existing_mood:
+        existing_mood.mood_level = mood_data.moodLevel
+        existing_mood.emoji = mood_data.emoji
+        existing_mood.emotion = resolved_emotion
+        existing_mood.tags = tags_string
+        existing_mood.notes = mood_data.notes
+        db.commit()
+        db.refresh(existing_mood)
+        return _mood_to_response(existing_mood)
+
     new_mood = Mood(
         user_id=current_user.id,
         date=mood_data.date,
         mood_level=mood_data.moodLevel,
         emoji=mood_data.emoji,
-        emotion=mood_data.emotion or emoji_emotion,
+        emotion=resolved_emotion,
         tags=tags_string,
         notes=mood_data.notes,
     )
