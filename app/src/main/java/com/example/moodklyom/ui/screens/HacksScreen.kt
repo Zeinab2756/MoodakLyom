@@ -126,7 +126,13 @@ fun HacksScreen(navController: NavController) {
                                     HackCard(
                                         hack = hack,
                                         isAdding = uiState.creatingTaskIds.contains(hack.id),
-                                        onAddToTasks = { viewModel.addHackAsTask(hack) }
+                                        onAddToTasks = {
+                                            viewModel.addHackAsTask(hack) {
+                                                navController.navigate(Screen.Tasks.route) {
+                                                    launchSingleTop = true
+                                                }
+                                            }
+                                        }
                                     )
                                 }
 
@@ -155,7 +161,13 @@ fun HacksScreen(navController: NavController) {
                                 HackCard(
                                     hack = hack,
                                     isAdding = uiState.creatingTaskIds.contains(hack.id),
-                                    onAddToTasks = { viewModel.addHackAsTask(hack) }
+                                    onAddToTasks = {
+                                        viewModel.addHackAsTask(hack) {
+                                            navController.navigate(Screen.Tasks.route) {
+                                                launchSingleTop = true
+                                            }
+                                        }
+                                    }
                                 )
                             }
                         }

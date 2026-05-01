@@ -91,7 +91,7 @@ class HacksViewModel(private val tokenManager: TokenManager) : ViewModel() {
         }
     }
 
-    fun addHackAsTask(hack: WellnessTip) {
+    fun addHackAsTask(hack: WellnessTip, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
             _uiState.update { it.copy(creatingTaskIds = it.creatingTaskIds + hack.id) }
             try {
@@ -108,6 +108,7 @@ class HacksViewModel(private val tokenManager: TokenManager) : ViewModel() {
 
                 if (response.isSuccessful && response.body()?.success == true) {
                     _uiState.update { it.copy(creatingTaskIds = it.creatingTaskIds - hack.id) }
+                    onSuccess()
                 } else {
                     val msg = response.errorBody()?.string() ?: "Failed to add to tasks"
                     _uiState.update {
