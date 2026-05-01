@@ -652,7 +652,7 @@ private fun showProposedTasksNotification(context: Context, taskIds: List<Int>) 
         return
     }
 
-    val deepLink = Uri.parse("moodaklyom://tasks?proposedIds=${taskIds.joinToString(",")}")
+    val deepLink = Uri.parse("moodaklyom://tasks")
     val intent = Intent(Intent.ACTION_VIEW, deepLink, context, MainActivity::class.java).apply {
         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
     }
@@ -666,7 +666,7 @@ private fun showProposedTasksNotification(context: Context, taskIds: List<Int>) 
     val notification = NotificationCompat.Builder(context, channelId)
         .setSmallIcon(android.R.drawable.ic_dialog_info)
         .setContentTitle("Your suggested tasks are ready")
-        .setContentText("Tap to see the tasks proposed from your mood.")
+        .setContentText("${taskIds.size} new task${if (taskIds.size == 1) "" else "s"} added. Tap to see your task list.")
         .setContentIntent(pendingIntent)
         .setDefaults(NotificationCompat.DEFAULT_ALL)
         .setSound(notificationSound)

@@ -56,6 +56,9 @@ fun NavGraph(
             ),
             deepLinks = listOf(
                 navDeepLink {
+                    uriPattern = "moodaklyom://tasks"
+                },
+                navDeepLink {
                     uriPattern = "moodaklyom://tasks?proposedIds={proposedIds}"
                 }
             )
